@@ -6,7 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.logging.{Level, Logger}
 
 object PasswordPdfPipelineApp extends App with ConcurrentQueuePipelining with PdfFileWorkflow {
-  Logger.getLogger("org.apache.pdfbox").setLevel(Level.SEVERE)
+  Logger.getLogger("org.apache.pdfbox").setLevel(Level.OFF) // vs SEVERE
 
   {
     val rootDir = new File("/Users/ebowman")

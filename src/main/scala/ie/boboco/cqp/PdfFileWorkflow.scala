@@ -84,11 +84,12 @@ trait PdfFileWorkflow {
    * @throws Throwable                for any other errors encountered during processing.
    */
   def enqueuePasswordProtectedPdfs(pdfOpt: Option[File], output: LinkedBlockingQueue[Option[File]]): Unit = {
+    val logErrors = false
     for {
       file <- pdfOpt
     } try PDDocument.load(file).close() catch {
       case e: InvalidPasswordException => output.put(Some(file))
-      case e: Throwable => println(s"Error processing file $file ${e.getMessage}")
+      case e: Throwable => if (logErrors) println(s"Error processing file $file ${e.getMessage}")
     }
   }
 }

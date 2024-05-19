@@ -8,11 +8,17 @@ import scala.util.{Try,Failure}
 /**
  * Provides functionality to pipeline operations on data items concurrently using a queue-based approach.
  * This trait allows for defining pipelines that process items through multiple stages using single or multiple threads.
+ * Each stage can be thought of a compute step that can process the data items in parallel, potentially transforming them.
  *
  * The pipelining is implemented by enhancing the functionality of `LinkedBlockingQueue` and individual data items
  * to support operations like `>>` which denote the passage of items through different processing stages.
  * Each stage in the pipeline can be assigned a specific function that processes the items, potentially transforming
- * them, and can operate with a specified number of threads to parallelize the processing.
+ * them, and can operate with a specified number of threads to parallelize the processing. That function is written
+ * to be passed an input to the compute task, and the task may produce zero or more outputs, not by returning from
+ * the function (which could only happen at the end of the computation), but by placing the output in the output queue
+ * as the computation progresses. The output queue is a `LinkedBlockingQueue` that holds the processed items and makes
+ * them available to the next stage of the processing pipeline. By tuning the thread sizes per processing step, you can
+ * control the level of parallelism in the pipeline to maximize throughput.
  *
  * Usage of this trait and its implicit classes requires an understanding of option types and blocking queues,
  * as well as basic concurrency concepts in Scala and Java, such as threads and atomic operations.
