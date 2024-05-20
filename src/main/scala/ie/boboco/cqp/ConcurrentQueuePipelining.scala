@@ -3,7 +3,7 @@ package ie.boboco.cqp
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, Executors, LinkedBlockingQueue}
 import scala.annotation.targetName
-import scala.util.{Try,Failure}
+import scala.util.{Try, Failure}
 
 /**
  * Provides functionality to pipeline operations on data items concurrently using a queue-based approach.
@@ -26,15 +26,14 @@ import scala.util.{Try,Failure}
  * Example Usage:
  * {{{
  * val pipeline = new File("/path/to/directory") >>
- *                enqueueRelevantDirectories >>
- *                enqueuePdfFiles >>
+ *                parallelFindPDFs >>
  *                (enqueuePasswordProtectedPdfs, 8)
  *
  * Iterator.continually(pipeline.take()).takeWhile(_.isDefined).foreach(item => println(item.get))
  * }}}
  *
- * Note: The provided example assumes the existence of properly defined `enqueueRelevantDirectories`,
- * `enqueuePdfFiles`, and `enqueuePasswordProtectedPdfs` functions, which should be implemented to suit
+ * Note: The provided example assumes the existence of properly defined `parallelFindPDFs`
+ * and `enqueuePasswordProtectedPdfs` functions, which should be implemented to suit
  * the specific data processing requirements.
  */
 trait ConcurrentQueuePipelining {
@@ -56,7 +55,7 @@ trait ConcurrentQueuePipelining {
    * val inputQueue = new LinkedBlockingQueue[Option[Int]]()
    * inputQueue.put(Some(1))
    * inputQueue.put(Some(2))
-   * inputQueue.put(None) // A marker to indicate the end of the queue
+   * inputQueue.put(None) // A marker to indicate the end of the queue, called a "poison pill".
    *
    * val processedQueue = inputQueue >> processItem >> (additionalProcessing, 3)
    * processedQueue.foreach(println)

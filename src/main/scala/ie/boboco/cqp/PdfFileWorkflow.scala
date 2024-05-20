@@ -19,9 +19,7 @@ import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Futu
  * programming paradigms to ensure composability and ease of integration with other processing stages.
  *
  * Methods:
- * - `enqueueRelevantDirectories`: Traverses the file system starting from a given root directory and enqueues
- * all relevant directories that do not match specified exclusion criteria.
- * - `enqueuePdfFiles`: Filters for PDF files within a given directory and enqueues them for further processing.
+ * - `parallelFindPDFs`: Recursively searches for PDF files starting from a given directory and enqueues them.
  * - `enqueuePasswordProtectedPdfs`: Checks if a PDF file is password-protected and enqueues it if true.
  *
  * These methods are intended to be used in a pipeline processing context where each takes an input from a
