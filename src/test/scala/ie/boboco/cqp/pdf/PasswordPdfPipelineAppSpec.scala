@@ -36,7 +36,7 @@ class PasswordPdfPipelineAppSpec extends AnyFlatSpec with Matchers with BeforeAn
     println(s"output = [$output]")
     output should include(protectedPdf.getAbsolutePath)
     output should not include nonProtectedPdf.getAbsolutePath
-    output should include(s"${badPdf.getName} Error")
+    output should include(s"${badPdf.getName}: java.io.IOException")
     output should include("Elapsed")
   }
 }

@@ -1,6 +1,5 @@
 package ie.boboco.cqp.pdf
 
-import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException
 
 import java.io.File
@@ -9,6 +8,7 @@ import java.util.concurrent.{Executors, LinkedBlockingQueue}
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.util.{Failure, Success}
 
 /**
  * Provides a workflow for processing PDF files within a directory structure. This trait defines methods to
@@ -41,10 +41,17 @@ trait PdfFileWorkflow {
   def enqueuePasswordProtectedPdfs(pdfOpt: Option[File], output: LinkedBlockingQueue[Option[File]]): Unit = {
     for {
       file <- pdfOpt
-    } try Loader.loadPDF(file).close() catch {
-      case e: InvalidPasswordException => output.put(Some(file))
-      case e: Throwable =>
-        println(s"Error processing file $file ${e.getMessage}")
+    } {
+      val libVersion = isPasswordProtected(file)
+      val myVersion = PdfUtils.isPasswordProtected(file)
+      if (libVersion != myVersion) {
+        println(s"Library version: $libVersion, my version: $myVersion")
+      }
+      libVersion match {
+        case Success(true) => output.put(pdfOpt)
+        case Success(false) => ()
+        case Failure(e) => println(s"Could not load $file: $e")
+      }
     }
   }
 
@@ -68,7 +75,9 @@ trait PdfFileWorkflow {
           Option(dir.listFiles()).fold {
             System.err.println("Error: null file list for " + dir.getAbsolutePath)
             Seq.empty
-          }{ _.toSeq }
+          } {
+            _.toSeq
+          }
 
         // Send the file downstream if it's a PDF
         case file if file.isFile &&
@@ -82,7 +91,7 @@ trait PdfFileWorkflow {
       }
     }
 
-    val executor = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors())
+    val executor = Executors.newFixedThreadPool(1) // Runtime.getRuntime.availableProcessors())
     implicit val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(executor)
 
     @tailrec
