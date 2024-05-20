@@ -45,7 +45,6 @@ trait PdfFileWorkflow {
       case e: InvalidPasswordException => output.put(Some(file))
       case e: Throwable =>
         println(s"Error processing file $file ${e.getMessage}")
-        e.printStackTrace()
     }
   }
 
