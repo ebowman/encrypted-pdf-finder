@@ -9,7 +9,7 @@ object PasswordPdfPipelineApp extends App with ConcurrentQueuePipelining with Pd
   Logger.getLogger("org.apache.pdfbox").setLevel(Level.OFF) // vs SEVERE
 
   {
-    val rootDir = new File("/Users/ebowman")
+    val rootDir = new File("/Users/ebowman/src")
     val coreCount = Runtime.getRuntime.availableProcessors()
     val encPdfQueue = rootDir >> parallelFindPDFs >> (enqueuePasswordProtectedPdfs, coreCount)
 
@@ -17,9 +17,10 @@ object PasswordPdfPipelineApp extends App with ConcurrentQueuePipelining with Pd
     val start = System.currentTimeMillis()
     Iterator.continually(encPdfQueue.take())
       .takeWhile(_.isDefined)
-      .foreach(pdf => println("***" + pdf.get))
+      .flatten
+      .foreach(println)
     val end = System.currentTimeMillis()
-    println(s"Time taken: ${end - start} ms")
+    println(s"Elapsed: ${end - start} ms")
     println(new Date())
   }
 }
