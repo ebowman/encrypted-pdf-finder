@@ -59,28 +59,27 @@ trait PdfFileWorkflow {
    * @param output The queue where found PDF files are enqueued.
    */
   def parallelFindPDFs(pdfOpt: Option[File], output: LinkedBlockingQueue[Option[File]]): Unit = {
-    val ignoreSuffixes: Set[String] = Set(".epub", ".fcpbundle", ".auh")
+    val ignoreSuffixes: Set[String] = Set(".epub", ".fcpbundle", ".auh", ".app")
 
     def processItem(item: File): Seq[File] = {
+      var rtn = Seq.empty[File]
       item match {
         case link if Files.isSymbolicLink(item.toPath) =>
-          Seq.empty
         case dir if item.isDirectory =>
           if (!ignoreSuffixes.exists(item.getName.toLowerCase.endsWith))
-            Option(item.listFiles()).getOrElse(Array.empty[File]).toSeq
-          else
-            Seq.empty
+            rtn = Option(item.listFiles()).getOrElse(Array.empty[File]).toSeq
         case file if item.getName.toLowerCase.endsWith(".pdf") =>
           output.put(Some(item))
-          Seq.empty
+        case _ =>
       }
+      rtn
     }
 
     val executor = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors())
     implicit val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(executor)
 
     @tailrec
-    def recurse(curDirs: Seq[File]): Unit =
+    def recurse(curDirs: Seq[File]): Unit = {
       if (curDirs.nonEmpty) {
         recurse(
           Await.result(
@@ -90,6 +89,7 @@ trait PdfFileWorkflow {
           ).flatten
         )
       }
+    }
 
     recurse(pdfOpt.toSeq)
     executor.shutdown()
