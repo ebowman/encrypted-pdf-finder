@@ -66,6 +66,8 @@ Below is an example usage of the pipeline setup within the main application.
 ```scala
 import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
+import ie.boboco.cqp.ConcurrentQueuePipelining
+import ie.boboco.cqp.pdf.PdfFileWorkflow
 
 object PasswordPdfPipelineApp extends App with ConcurrentQueuePipelining with PdfFileWorkflow {
   val rootDir = new File("/Users/ebowman/src")

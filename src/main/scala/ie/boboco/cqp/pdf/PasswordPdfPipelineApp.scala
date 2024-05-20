@@ -1,4 +1,6 @@
-package ie.boboco.cqp
+package ie.boboco.cqp.pdf
+
+import ie.boboco.cqp.ConcurrentQueuePipelining
 
 import java.io.File
 import java.util.Date
