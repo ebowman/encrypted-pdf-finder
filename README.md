@@ -95,6 +95,7 @@ This setup will start from the root directory, find all PDF files, check if they
 2. Clone the repository.
 3. Compile the project using `sbt compile`.
 4. Run the main application using `sbt run [path]`.
+5. To generate a coverage report: `sbt clean coverage test coverageReport` followed by `open $(find . -name index.html)`.
 
 Here [path] needs to be a path to a directory to traverse. It will fail
 if you don't include this argument (this is to keep the automated test
