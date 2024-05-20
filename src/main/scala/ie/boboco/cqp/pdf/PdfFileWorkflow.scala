@@ -60,17 +60,23 @@ trait PdfFileWorkflow {
     val ignoreSuffixes: Set[String] = Set(".epub", ".fcpbundle", ".auh", ".app")
 
     def processItem(item: File): Seq[File] = {
-      var rtn = Seq.empty[File]
       item match {
-        case link if Files.isSymbolicLink(item.toPath) =>
-        case dir if item.isDirectory =>
-          if (!ignoreSuffixes.exists(item.getName.toLowerCase.endsWith))
-            rtn = Option(item.listFiles()).getOrElse(Array.empty[File]).toSeq
-        case file if item.getName.toLowerCase.endsWith(".pdf") =>
-          output.put(Some(item))
-        case _ =>
+        // Return the directory listing if this is an appropriate directory
+        case dir if dir.isDirectory &&
+          !Files.isSymbolicLink(dir.toPath) &&
+          !ignoreSuffixes.exists(suffix => dir.getName.toLowerCase.endsWith(suffix)) =>
+          Option(dir.listFiles()).getOrElse(Array.empty[File]).toSeq
+
+        // Send the file downstream if it's a PDF
+        case file if file.isFile &&
+          !Files.isSymbolicLink(file.toPath) &&
+          file.getName.toLowerCase.endsWith(".pdf") =>
+          output.put(Some(file))
+          Seq.empty
+
+        // Anything else is ignored
+        case _ => Seq.empty
       }
-      rtn
     }
 
     val executor = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors())
