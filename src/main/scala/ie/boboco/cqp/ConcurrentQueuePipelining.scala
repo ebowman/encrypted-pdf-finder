@@ -200,7 +200,9 @@ trait ConcurrentQueuePipelining {
           Try {
             worker(Some(item), output)
           } match {
-            case Failure(e) => println(s"Error processing item $item ${e.getMessage}")
+            case Failure(e) =>
+              println(s"Error processing item $item $e ${e.getMessage}")
+              e.printStackTrace()
             case _ => () // success
           }
         }

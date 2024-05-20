@@ -26,13 +26,14 @@ class PasswordPdfPipelineAppSpec extends AnyFlatSpec with Matchers with BeforeAn
     val printStream = new PrintStream(outContent)
     try {
       Console.withOut(printStream) {
-        PasswordPdfPipelineApp.main(Array(testDir.toString))
+          PasswordPdfPipelineApp.main(Array(testDir.toString))
       }
     } finally {
       printStream.close()
     }
 
     val output = outContent.toString
+    println(s"output = [$output]")
     output should include(protectedPdf.getAbsolutePath)
     output should not include nonProtectedPdf.getAbsolutePath
     output should include(s"${badPdf.getName} Error")

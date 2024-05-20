@@ -43,7 +43,9 @@ trait PdfFileWorkflow {
       file <- pdfOpt
     } try Loader.loadPDF(file).close() catch {
       case e: InvalidPasswordException => output.put(Some(file))
-      case e: Throwable => println(s"Error processing file $file ${e.getMessage}")
+      case e: Throwable =>
+        println(s"Error processing file $file ${e.getMessage}")
+        e.printStackTrace()
     }
   }
 
@@ -64,7 +66,10 @@ trait PdfFileWorkflow {
         case dir if dir.isDirectory &&
           !Files.isSymbolicLink(dir.toPath) &&
           !ignoreSuffixes.exists(suffix => dir.getName.toLowerCase.endsWith(suffix)) =>
-          dir.listFiles().toSeq
+          Option(dir.listFiles()).fold {
+            System.err.println("Error: null file list for " + dir.getAbsolutePath)
+            Seq.empty
+          }{ _.toSeq }
 
         // Send the file downstream if it's a PDF
         case file if file.isFile &&

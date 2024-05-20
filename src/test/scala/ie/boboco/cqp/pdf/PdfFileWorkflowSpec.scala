@@ -5,6 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.io.File
+import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.{Files, Path}
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -73,5 +74,21 @@ class PdfFileWorkflowSpec extends AnyFlatSpec with Matchers with ScalaFutures wi
     outputQueue.put(None)
     val files = Iterator.continually(outputQueue.take()).takeWhile(_.isDefined).flatten.toSeq
     files shouldBe empty
+  }
+
+  it should "process a directory it doesn't have permission to read correctly" in {
+    val rootDir = new File("src/test/resources/test_pdfs/empty")
+    val outputQueue = new LinkedBlockingQueue[Option[File]]()
+    val prevPermissions = Files.getPosixFilePermissions(rootDir.toPath)
+    val permissions = PosixFilePermissions.fromString("---------")
+    Files.setPosixFilePermissions(rootDir.toPath, permissions)
+    try {
+      parallelFindPDFs(Some(rootDir), outputQueue)
+      outputQueue.put(None)
+      val files = Iterator.continually(outputQueue.take()).takeWhile(_.isDefined).flatten.toSeq
+      files shouldBe empty
+    } finally {
+      Files.setPosixFilePermissions(rootDir.toPath, prevPermissions)
+    }
   }
 }
