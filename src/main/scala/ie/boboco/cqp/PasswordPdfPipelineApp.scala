@@ -10,7 +10,8 @@ object PasswordPdfPipelineApp extends App with ConcurrentQueuePipelining with Pd
 
   {
     val rootDir = new File("/Users/ebowman")
-    val encPdfQueue = rootDir >> enqueueRelevantDirectories >> enqueuePdfFiles >> (enqueuePasswordProtectedPdfs, 8)
+    val coreCount = Runtime.getRuntime.availableProcessors()
+    val encPdfQueue = rootDir >> parallelFindPDFs >> (enqueuePasswordProtectedPdfs, coreCount)
 
     println(new Date())
     val start = System.currentTimeMillis()

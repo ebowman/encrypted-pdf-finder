@@ -1,12 +1,14 @@
 package ie.boboco.cqp
 
-import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException
 
-import java.io.{File, FileFilter, IOException}
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
-import java.util.concurrent.LinkedBlockingQueue
+import java.io.File
+import java.nio.file.Files
+import java.util.concurrent.{Executors, LinkedBlockingQueue}
+import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 
 /**
  * Provides a workflow for processing PDF files within a directory structure. This trait defines methods to
@@ -30,51 +32,6 @@ import java.util.concurrent.LinkedBlockingQueue
 trait PdfFileWorkflow {
 
   /**
-   * Enqueues directories for further processing, excluding those with specified suffixes that are deemed irrelevant.
-   * This method walks the file tree starting from a provided root directory and applies filtering based on the suffix
-   * of each directory's name.
-   *
-   * @param rootFile The root directory from which directory traversal begins.
-   * @param output   The queue where directories that pass the filter are enqueued.
-   * @throws IOException if an I/O error is encountered during file traversal.
-   */
-  def enqueueRelevantDirectories(rootFile: Option[File], output: LinkedBlockingQueue[Option[File]]): Unit = {
-    val ignoreSuffixes = Set(".epub", ".fcpbundle", ".auh")
-    for (file <- rootFile) {
-      val visitor = new SimpleFileVisitor[Path] {
-        override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          if (ignoreSuffixes.exists(dir.toFile.getName.toLowerCase.endsWith)) FileVisitResult.SKIP_SUBTREE
-          else {
-            output.put(Some(dir.toFile))
-            FileVisitResult.CONTINUE
-          }
-        }
-
-        override def visitFileFailed(file: Path, exc: IOException): FileVisitResult = FileVisitResult.CONTINUE
-      }
-
-      Files.walkFileTree(file.toPath, visitor)
-    }
-  }
-
-  /**
-   * Filters and enqueues PDF files found in a specified directory. This method checks each file in the directory
-   * to determine if it ends with the `.pdf` extension, enqueuing those that do for further processing.
-   *
-   * @param dirOpt The directory to search for PDF files.
-   * @param output The queue where PDF files are enqueued.
-   */
-  def enqueuePdfFiles(dirOpt: Option[File], output: LinkedBlockingQueue[Option[File]]): Unit = {
-    for {
-      dir <- dirOpt
-      files <- Option(dir.listFiles(new FileFilter {
-        override def accept(file: File): Boolean = file.isFile && file.getName.toLowerCase.endsWith(".pdf")
-      })) 
-      file <- files 
-    } output.put(Some(file))
-  }
-
-  /**
    * Checks and enqueues PDF files that are password protected. This method attempts to open each PDF file
    * and uses the response from the PDF library to determine if the file is password protected.
    *
@@ -87,9 +44,54 @@ trait PdfFileWorkflow {
     val logErrors = false
     for {
       file <- pdfOpt
-    } try PDDocument.load(file).close() catch {
+    } try Loader.loadPDF(file).close() catch {
       case e: InvalidPasswordException => output.put(Some(file))
       case e: Throwable => if (logErrors) println(s"Error processing file $file ${e.getMessage}")
     }
+  }
+
+  /**
+   * Recursively searches for PDF files starting from a given directory, processing directories and files in parallel.
+   * PDF files found are enqueued into the provided output queue. The function uses a fixed thread pool to manage
+   * concurrency and avoid blocking the main thread during file processing.
+   *
+   * @param pdfOpt The initial directory to start the search from, wrapped in an Option.
+   * @param output The queue where found PDF files are enqueued.
+   */
+  def parallelFindPDFs(pdfOpt: Option[File], output: LinkedBlockingQueue[Option[File]]): Unit = {
+    val ignoreSuffixes: Set[String] = Set(".epub", ".fcpbundle", ".auh")
+
+    def processItem(item: File): Seq[File] = {
+      item match {
+        case link if Files.isSymbolicLink(item.toPath) =>
+          Seq.empty
+        case dir if item.isDirectory =>
+          if (!ignoreSuffixes.exists(item.getName.toLowerCase.endsWith))
+            Option(item.listFiles()).getOrElse(Array.empty[File]).toSeq
+          else
+            Seq.empty
+        case file if item.getName.toLowerCase.endsWith(".pdf") =>
+          output.put(Some(item))
+          Seq.empty
+      }
+    }
+
+    val executor = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors())
+    implicit val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(executor)
+
+    @tailrec
+    def recurse(curDirs: Seq[File]): Unit =
+      if (curDirs.nonEmpty) {
+        recurse(
+          Await.result(
+            Future.sequence(
+              curDirs.map(curDir => Future(processItem(curDir)))
+            ), Duration.Inf
+          ).flatten
+        )
+      }
+
+    recurse(pdfOpt.toSeq)
+    executor.shutdown()
   }
 }
