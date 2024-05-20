@@ -96,6 +96,9 @@ This setup will start from the root directory, find all PDF files, check if they
 3. Compile the project using `sbt compile`.
 4. Run the main application using `sbt run`.
 
+This will print out the full path to any password-protected PDF files found within the directory tree 
+under the user's home directory.
+
 ## Contributing
 
 Contributions are welcome! Please fork the repository and create a pull request with your changes.
