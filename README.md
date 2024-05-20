@@ -4,16 +4,16 @@
 
 This project, **Encrypted PDF Finder**, provides a concurrent pipeline for processing PDF files within a directory structure. The main functionalities include traversing directories, filtering for PDF files, and identifying password-protected PDFs. The pipeline leverages concurrency to maximize throughput and minimize processing time.
 
-IMO there are two interesting parts of this program:
+IMO, there are two interesting parts of this program:
 
-1. The ```parallelFindPDFs``` method in the ```PdfFileWorkflow``` trait. This method uses a concurrent queue to traverse directories and enqueue PDF files for processing. It is a good example of how to traverse a file system concurrently. It's much, much faster than the ```Files.walkFileTree``` method in Java.
-2. 
+1. The ```parallelFindPDFs``` method in the ```PdfFileWorkflow``` trait. This method uses a concurrent queue to traverse directories and enqueue PDF files for processing. It is a good example of how to traverse a file system concurrently. It's much faster than the ```Files.walkFileTree``` method in Java.
+2. The ```ConcurrentQueuePipelining``` trait is a somewhat novel way to pipeline processing steps so that each step can be executed in parallel to improve the throughput of the process.
 ## Project Structure
 
 The project consists of three main components:
 
-1. **PasswordPdfPipelineApp** - The main application that initializes and runs the pipeline.
-2. **ConcurrentQueuePipelining** - A trait that provides the core functionality for creating concurrent pipelines.
+1. **PasswordPdfPipelineApp** - The main application initializes and runs the pipeline.
+2. **ConcurrentQueuePipelining** - A trait providing core functionality for creating concurrent pipelines.
 3. **PdfFileWorkflow** - A trait that defines the workflow for processing PDF files, including methods for traversing directories and identifying password-protected PDFs.
 
 ## Files
@@ -25,12 +25,12 @@ This file contains the main application which sets up and runs the pipeline.
 #### Key Components
 
 - **Main Object**: Initializes the application and sets the logging level.
-- **Pipeline Setup**: Defines the root directory, available processors, and sets up the pipeline stages.
+- **Pipeline Setup**: Defines the root directory, available processors for sizing the thread pools, and sets up the pipeline stages.
 - **Execution**: Runs the pipeline and prints the processing time.
 
 #### Usage
 
-To run the application, simply execute the `PasswordPdfPipelineApp` object. It will process PDF files starting from the specified root directory and print out the password-protected PDFs.
+To run the application, simply execute the `PasswordPdfPipelineApp` object. It will process PDF files from the specified root directory and print out the password-protected PDFs.
 
 ### 2. `ConcurrentQueuePipelining.scala`
 
