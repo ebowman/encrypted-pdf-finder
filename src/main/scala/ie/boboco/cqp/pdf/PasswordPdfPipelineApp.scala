@@ -15,11 +15,11 @@ import java.util.logging.{Level, Logger}
  * This application leverages the ConcurrentQueuePipelining and PdfFileWorkflow traits to define and execute
  * the pipeline stages in a concurrent manner, maximizing the utilization of available CPU cores.
  */
-object PasswordPdfPipelineApp extends App with ConcurrentQueuePipelining with PdfFileWorkflow {
+object PasswordPdfPipelineApp extends ConcurrentQueuePipelining with PdfFileWorkflow {
   Logger.getLogger("org.apache.pdfbox").setLevel(Level.OFF)
 
-  {
-    val rootDir = new File(System.getProperty("user.home"))
+  def main(args: Array[String]): Unit = {
+    val rootDir = new File(args.head)
     val coreCount = Runtime.getRuntime.availableProcessors()
     val pdfPipeline = rootDir >> parallelFindPDFs >> (enqueuePasswordProtectedPdfs, coreCount)
 

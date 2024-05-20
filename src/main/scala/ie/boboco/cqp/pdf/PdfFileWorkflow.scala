@@ -39,12 +39,11 @@ trait PdfFileWorkflow {
    * @throws Throwable                for any other errors encountered during processing.
    */
   def enqueuePasswordProtectedPdfs(pdfOpt: Option[File], output: LinkedBlockingQueue[Option[File]]): Unit = {
-    val logErrors = false
     for {
       file <- pdfOpt
     } try Loader.loadPDF(file).close() catch {
       case e: InvalidPasswordException => output.put(Some(file))
-      case e: Throwable => if (logErrors) println(s"Error processing file $file ${e.getMessage}")
+      case e: Throwable => println(s"Error processing file $file ${e.getMessage}")
     }
   }
 
@@ -65,7 +64,7 @@ trait PdfFileWorkflow {
         case dir if dir.isDirectory &&
           !Files.isSymbolicLink(dir.toPath) &&
           !ignoreSuffixes.exists(suffix => dir.getName.toLowerCase.endsWith(suffix)) =>
-          Option(dir.listFiles()).getOrElse(Array.empty[File]).toSeq
+          dir.listFiles().toSeq
 
         // Send the file downstream if it's a PDF
         case file if file.isFile &&
